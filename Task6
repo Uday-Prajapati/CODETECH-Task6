@@ -1,1 +1,418 @@
+// Java Code
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.sql.*;
 
+public class HospitalManagementSystem {
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/hospital_db";
+    private static final String USER = "root";
+    private static final String PASSWORD = "Uday@2609";
+
+    private Connection connection;
+
+    public HospitalManagementSystem() {
+        try {
+            connection = DriverManager.getConnection(DB_URL, USER, PASSWORD);
+            System.out.println("Connected to the database.");
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Database connection failed: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private boolean isNumeric(String str) {
+        try {
+            Integer.parseInt(str);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    public void registerPatient(String name, int age, String address, String contact) {
+        if (name.isEmpty() || address.isEmpty() || contact.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "All fields must be filled.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            String query = "INSERT INTO patients (name, age, address, contact) VALUES (?, ?, ?, ?)";
+            PreparedStatement stmt = connection.prepareStatement(query);
+            stmt.setString(1, name);
+            stmt.setInt(2, age);
+            stmt.setString(3, address);
+            stmt.setString(4, contact);
+            stmt.executeUpdate();
+            JOptionPane.showMessageDialog(null, "Patient registered successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Error registering patient: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    public void scheduleAppointment(int patientId, String doctorName, String date, String time) {
+        if (doctorName.isEmpty() || date.isEmpty() || time.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "All fields must be filled.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            String query = "INSERT INTO appointments (patient_id, doctor_name, date, time) VALUES (?, ?, ?, ?)";
+            PreparedStatement stmt = connection.prepareStatement(query);
+            stmt.setInt(1, patientId);
+            stmt.setString(2, doctorName);
+            stmt.setString(3, date);
+            stmt.setString(4, time);
+            stmt.executeUpdate();
+            JOptionPane.showMessageDialog(null, "Appointment scheduled successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Error scheduling appointment: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    public void addHealthRecord(int patientId, String diagnosis, String treatment) {
+        if (diagnosis.isEmpty() || treatment.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "All fields must be filled.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            String query = "INSERT INTO health_records (patient_id, diagnosis, treatment) VALUES (?, ?, ?)";
+            PreparedStatement stmt = connection.prepareStatement(query);
+            stmt.setInt(1, patientId);
+            stmt.setString(2, diagnosis);
+            stmt.setString(3, treatment);
+            stmt.executeUpdate();
+            JOptionPane.showMessageDialog(null, "Health record added successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Error adding health record: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    public void generateBill(int patientId, double amount, String description) {
+        if (description.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "Description cannot be empty.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            String query = "INSERT INTO billing (patient_id, amount, description) VALUES (?, ?, ?)";
+            PreparedStatement stmt = connection.prepareStatement(query);
+            stmt.setInt(1, patientId);
+            stmt.setDouble(2, amount);
+            stmt.setString(3, description);
+            stmt.executeUpdate();
+            JOptionPane.showMessageDialog(null, "Bill generated successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Error generating bill: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    public void updateInventory(String itemName, int quantity) {
+        if (itemName.isEmpty() || quantity <= 0) {
+            JOptionPane.showMessageDialog(null, "Invalid input for inventory.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            String query = "INSERT INTO inventory (item_name, quantity) VALUES (?, ?) ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity)";
+            PreparedStatement stmt = connection.prepareStatement(query);
+            stmt.setString(1, itemName);
+            stmt.setInt(2, quantity);
+            stmt.executeUpdate();
+            JOptionPane.showMessageDialog(null, "Inventory updated successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Error updating inventory: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    public void addStaff(String name, String position, double salary) {
+        if (name.isEmpty() || position.isEmpty() || salary <= 0) {
+            JOptionPane.showMessageDialog(null, "Invalid input for staff details.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            String query = "INSERT INTO staff (name, position, salary) VALUES (?, ?, ?)";
+            PreparedStatement stmt = connection.prepareStatement(query);
+            stmt.setString(1, name);
+            stmt.setString(2, position);
+            stmt.setDouble(3, salary);
+            stmt.executeUpdate();
+            JOptionPane.showMessageDialog(null, "Staff member added successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Error adding staff: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    public static void main(String[] args) {
+        HospitalManagementSystem hms = new HospitalManagementSystem();
+
+        JFrame frame = new JFrame("Hospital Management System");
+        frame.setSize(600, 600);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(new GridLayout(7, 1));
+
+        JButton registerPatientBtn = new JButton("Register Patient");
+        registerPatientBtn.addActionListener(e -> {
+            JTextField nameField = new JTextField();
+            JTextField ageField = new JTextField();
+            JTextField addressField = new JTextField();
+            JTextField contactField = new JTextField();
+
+            Object[] fields = {
+                "Name:", nameField,
+                "Age:", ageField,
+                "Address:", addressField,
+                "Contact:", contactField
+            };
+
+            int option = JOptionPane.showConfirmDialog(frame, fields, "Register Patient", JOptionPane.OK_CANCEL_OPTION);
+            if (option == JOptionPane.OK_OPTION) {
+                String name = nameField.getText();
+                String ageText = ageField.getText();
+
+                if (!hms.isNumeric(ageText)) {
+                    JOptionPane.showMessageDialog(frame, "Age must be a number.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                int age = Integer.parseInt(ageText);
+                String address = addressField.getText();
+                String contact = contactField.getText();
+                hms.registerPatient(name, age, address, contact);
+            }
+        });
+
+        JButton scheduleAppointmentBtn = new JButton("Schedule Appointment");
+        scheduleAppointmentBtn.addActionListener(e -> {
+            JTextField patientIdField = new JTextField();
+            JTextField doctorNameField = new JTextField();
+            JTextField dateField = new JTextField();
+            JTextField timeField = new JTextField();
+
+            Object[] fields = {
+                "Patient ID:", patientIdField,
+                "Doctor Name:", doctorNameField,
+                "Date (YYYY-MM-DD):", dateField,
+                "Time (HH:MM):", timeField
+            };
+
+            int option = JOptionPane.showConfirmDialog(frame, fields, "Schedule Appointment", JOptionPane.OK_CANCEL_OPTION);
+            if (option == JOptionPane.OK_OPTION) {
+                String patientIdText = patientIdField.getText();
+                if (!hms.isNumeric(patientIdText)) {
+                    JOptionPane.showMessageDialog(frame, "Patient ID must be a number.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                int patientId = Integer.parseInt(patientIdText);
+                String doctorName = doctorNameField.getText();
+                String date = dateField.getText();
+                String time = timeField.getText();
+                hms.scheduleAppointment(patientId, doctorName, date, time);
+            }
+        });
+
+        JButton addHealthRecordBtn = new JButton("Add Health Record");
+        addHealthRecordBtn.addActionListener(e -> {
+            JTextField patientIdField = new JTextField();
+            JTextField diagnosisField = new JTextField();
+            JTextField treatmentField = new JTextField();
+
+            Object[] fields = {
+                "Patient ID:", patientIdField,
+                "Diagnosis:", diagnosisField,
+                "Treatment:", treatmentField
+            };
+
+            int option = JOptionPane.showConfirmDialog(frame, fields, "Add Health Record", JOptionPane.OK_CANCEL_OPTION);
+            if (option == JOptionPane.OK_OPTION) {
+                String patientIdText = patientIdField.getText();
+                if (!hms.isNumeric(patientIdText)) {
+                    JOptionPane.showMessageDialog(frame, "Patient ID must be a number.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                int patientId = Integer.parseInt(patientIdText);
+                String diagnosis = diagnosisField.getText();
+                String treatment = treatmentField.getText();
+                hms.addHealthRecord(patientId, diagnosis, treatment);
+            }
+        });
+
+        JButton generateBillBtn = new JButton("Generate Bill");
+        generateBillBtn.addActionListener(e -> {
+            JTextField patientIdField = new JTextField();
+            JTextField amountField = new JTextField();
+            JTextField descriptionField = new JTextField();
+
+            Object[] fields = {
+                "Patient ID:", patientIdField,
+                "Amount:", amountField,
+                "Description:", descriptionField
+            };
+
+            int option = JOptionPane.showConfirmDialog(frame, fields, "Generate Bill", JOptionPane.OK_CANCEL_OPTION);
+            if (option == JOptionPane.OK_OPTION) {
+                String patientIdText = patientIdField.getText();
+                if (!hms.isNumeric(patientIdText)) {
+                    JOptionPane.showMessageDialog(frame, "Patient ID must be a number.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                int patientId = Integer.parseInt(patientIdText);
+                double amount;
+                try {
+                    amount = Double.parseDouble(amountField.getText());
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(frame, "Amount must be a number.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                String description = descriptionField.getText();
+                hms.generateBill(patientId, amount, description);
+            }
+        });
+
+        JButton updateInventoryBtn = new JButton("Update Inventory");
+        updateInventoryBtn.addActionListener(e -> {
+            JTextField itemNameField = new JTextField();
+            JTextField quantityField = new JTextField();
+
+            Object[] fields = {
+                "Item Name:", itemNameField,
+                "Quantity:", quantityField
+            };
+
+            int option = JOptionPane.showConfirmDialog(frame, fields, "Update Inventory", JOptionPane.OK_CANCEL_OPTION);
+            if (option == JOptionPane.OK_OPTION) {
+                String itemName = itemNameField.getText();
+                int quantity;
+                try {
+                    quantity = Integer.parseInt(quantityField.getText());
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(frame, "Quantity must be a number.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                hms.updateInventory(itemName, quantity);
+            }
+        });
+
+        JButton addStaffBtn = new JButton("Add Staff");
+        addStaffBtn.addActionListener(e -> {
+            JTextField nameField = new JTextField();
+            JTextField positionField = new JTextField();
+            JTextField salaryField = new JTextField();
+
+            Object[] fields = {
+                "Name:", nameField,
+                "Position:", positionField,
+                "Salary:", salaryField
+            };
+
+            int option = JOptionPane.showConfirmDialog(frame, fields, "Add Staff", JOptionPane.OK_CANCEL_OPTION);
+            if (option == JOptionPane.OK_OPTION) {
+                String name = nameField.getText();
+                String position = positionField.getText();
+                double salary;
+                try {
+                    salary = Double.parseDouble(salaryField.getText());
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(frame, "Salary must be a number.", "Validation Error", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                hms.addStaff(name, position, salary);
+            }
+        });
+
+        frame.add(registerPatientBtn);
+        frame.add(scheduleAppointmentBtn);
+        frame.add(addHealthRecordBtn);
+        frame.add(generateBillBtn);
+        frame.add(updateInventoryBtn);
+        frame.add(addStaffBtn);
+
+        frame.setVisible(true);
+    }
+}
+
+/* ------------------------------------------------------------------------------------------------------------------------------- */
+
+// MySQL Code:
+/*
+CREATE DATABASE IF NOT EXISTS hospital_db;
+
+USE hospital_db;
+
+-- Create patients table
+CREATE TABLE IF NOT EXISTS patients (
+    patient_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    age INT NOT NULL,
+    address TEXT NOT NULL,
+    contact VARCHAR(15) NOT NULL
+);
+
+-- Create appointments table
+CREATE TABLE IF NOT EXISTS appointments (
+    appointment_id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT NOT NULL,
+    doctor_name VARCHAR(100) NOT NULL,
+    date DATE NOT NULL,
+    time TIME NOT NULL,
+    FOREIGN KEY (patient_id) REFERENCES patients(patient_id)
+);
+
+-- Create health_records table
+CREATE TABLE IF NOT EXISTS health_records (
+    record_id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT NOT NULL,
+    diagnosis TEXT NOT NULL,
+    treatment TEXT NOT NULL,
+    FOREIGN KEY (patient_id) REFERENCES patients(patient_id)
+);
+
+-- Create billing table
+CREATE TABLE IF NOT EXISTS billing (
+    bill_id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    description TEXT NOT NULL,
+    FOREIGN KEY (patient_id) REFERENCES patients(patient_id)
+);
+
+-- Create inventory table
+CREATE TABLE IF NOT EXISTS inventory (
+    item_id INT AUTO_INCREMENT PRIMARY KEY,
+    item_name VARCHAR(100) NOT NULL,
+    quantity INT NOT NULL
+);
+
+-- Create staff table
+CREATE TABLE IF NOT EXISTS staff (
+    staff_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    position VARCHAR(100) NOT NULL,
+    salary DECIMAL(10, 2) NOT NULL
+);
+
+-- Select all records from the patients table
+SELECT * FROM patients;
+
+-- Select all records from the appointments table
+SELECT * FROM appointments;
+
+-- Select all records from the health_records table
+SELECT * FROM health_records;
+
+-- Select all records from the billing table
+SELECT * FROM billing;
+
+-- Select all records from the inventory table
+SELECT * FROM inventory;
+
+-- Select all records from the staff table
+SELECT * FROM staff;
+*/
